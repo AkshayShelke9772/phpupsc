@@ -277,34 +277,52 @@ class studentModel {
     }
 
     // function register the user
-    function forgotPassword($userId, $username) {
-        // return $username;
+    function forgotPassword($data) {
+        $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetch', 'data' => null];
 
-        $userId = mysqli_real_escape_string($this->con, $userId);
-        $username = mysqli_real_escape_string($this->con, $username);
+        $username =  $data->username;
 
-        $sql = "select email from users where (email='$username' or mobile='$username') and UserId='$userId'";
+        $sql = "select * from student_master where (email_id='$username' or phone_number='$username')";
+        $result = $this->con->prepare($sql);
 
-        $result = mysqli_query($this->con, $sql);
-
-        if (mysqli_num_rows($result) > 0) {
-            $row = $result->fetch_array();
-
-            $otp = rand(10000, 50000);
-            $email = $row["email"];
-
-            $dataArray = [
-                'statusCode' => 200,
-                'email' => $email
-            ];
-            return $dataArray;
-        } else {
-            $dataArray = [
-                'statusCode' => 201,
-                'message' => 'The Entered Username is not valid (Re-enter it)'
-            ];
-            return $dataArray;
+        if ($result->execute()) 
+        {
+            
+            $number_of_rows = $result->fetchColumn();
+        
+            if ($number_of_rows > 0) {
+               foreach($this->con->query(($sql)) as $row){
+                $res->stud_id = $row["student_id"];
+                $res->stud_username = $username;
+               };
+                $res->status = true;
+                $res->message = "Username existed";
+            }else{
+                $res->status = false;
+                $res->message = "Username does not exist";
+            }
         }
+
+        return $res;
+
+        // if (mysqli_num_rows($result) > 0) {
+        //     $row = $result->fetch_array();
+
+        //     $otp = rand(10000, 50000);
+        //     $email = $row["email"];
+
+        //     $dataArray = [
+        //         'statusCode' => 200,
+        //         'email' => $email
+        //     ];
+        //     return $dataArray;
+        // } else {
+        //     $dataArray = [
+        //         'statusCode' => 201,
+        //         'message' => 'The Entered Username is not valid (Re-enter it)'
+        //     ];
+        //     return $dataArray;
+        // }
     }
 
 // save otp in database

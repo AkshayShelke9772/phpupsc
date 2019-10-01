@@ -251,6 +251,63 @@ class studentController {
         return $res;
     }
 
+
+    function forgotPassword($methodname, $data) {
+        
+        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        $db = new studentModel();
+        $response = $db->forgotPassword($data);
+        if ($response->status) {
+            $stud_id = $response->stud_id; // get for save OTP
+            $stud_username = trim($response->stud_username); //get for send OTP on email / mobile
+            
+            $helper = new helper();
+            $otpCode = $helper->generateRandomOtp();
+            $savOtpRs = $db->saveOtp($stud_id, $otpCode);
+
+            if($savOtpRs->status){
+                //OTP saved success in database
+                $otpMessage ="Your OTP for UPSC Summaries ".$otpCode." Do not share with anyone! Thank You";
+
+                if(is_numeric($stud_username)) //Check username is email or mobile
+                { //username is mobile number
+
+                    $SmsGatewayHubSender = new SmsGatewayHubSender();
+                    if($SmsGatewayHubSender->sendSms($otpMessage,(Int)$stud_username)){
+                        $res->statusCode=200;
+                        $res->message = "OTP send succesfull to ".$stud_username." number , please verify OTP";
+                    }else{
+                        // OTP not send succes please try again
+                        $res->statusCode=403;
+                        $res->message = "OTP could not be send please try again  / You can try with registered Email-Id";
+                    }
+                }else{
+                    //username is email
+                    $sendmail = new SendMail();
+                    if($sendmail->sendOTP($stud_username,$otpMessage)){
+                        $res->statusCode=200;
+                        $res->message = "OTP send succesfull to ".$stud_username." , please verify OTP";
+                    }else{
+                        // OTP not send succes please try again
+                        $res->statusCode=403;
+                        $res->message = "OTP could not be send please try again / You can try with registered Mobile Number";
+                    }
+                }   
+
+            }else{
+                // OTP not save so please try again
+                $res->statusCode = 403;
+                $res->message = $savOtpRs->message;
+            }
+        } else {
+            //User not found to forgot password please try again 
+            $res->statusCode = 403;
+            $res->message = $response->message;
+        }
+        return $res;
+    }
+
+    
     function updateProfile($data) {
         global $auth_obj;
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];

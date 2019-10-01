@@ -26,7 +26,7 @@ class main {
             $endPoint = $arr[2];
             $method_name = $arr[3];
 
-            $deny_access_arr = ['register', 'login', 'verify-otp'];
+            $deny_access_arr = ['register', 'login', 'verify-otp','forgot-password'];//no need authorization
 
             if (in_array($method_name, $deny_access_arr)) {
                 $apiRes = $this->working($endPoint, $method_name, $requested_method, $data, false);
@@ -295,6 +295,10 @@ class main {
                     $fun = $obj->verifyOtp($methodname, $data);
                     return $fun;
                 }
+            case 'forgot-password' : { // verify otp while during register / forgot password
+                    $fun = $obj->forgotPassword($methodname, $data);
+                    return $fun;
+                }  
             case 'login' : {
                     $fun = $obj->login($data);
                     return $fun;
