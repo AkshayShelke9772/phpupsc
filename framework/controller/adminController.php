@@ -647,6 +647,12 @@ class adminController {
         return $res;
     }
 
+
+
+    
+
+
+
     function getFeedbackQueById($id) {
         global $auth_obj;
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
