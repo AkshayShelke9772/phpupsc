@@ -26,11 +26,7 @@ class main {
             $endPoint = $arr[2];
             $method_name = $arr[3];
 
-<<<<<<< HEAD
             $deny_access_arr = ['resend-otp','social-login','register', 'login', 'verify-otp','forgot-password','reset-password'];//no need authorization
-=======
-            $deny_access_arr = ['social-login','register', 'login', 'verify-otp','forgot-password','reset-password'];//no need authorization
->>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
 
             if (in_array($method_name, $deny_access_arr)) {
                 $apiRes = $this->working($endPoint, $method_name, $requested_method, $data, false);
