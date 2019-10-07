@@ -151,7 +151,6 @@ class main {
                     $fun = $obj->getChartByKewords($exam_id);
                     return $fun;
                 }    
-<<<<<<< HEAD
 			case 'get-my-oredrs-my-test' : {
                  $fun = $obj->getAllMyOrdersAndMyTest($data);
                  return $fun;
@@ -160,8 +159,6 @@ class main {
                  $fun = $obj->scoreHistoryOne();
                  return $fun;
                 }    
-=======
->>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
         }
     }
 
@@ -334,17 +331,10 @@ class main {
                     $fun = $obj->socialLogin($data);
                     return $fun;
                 }
-<<<<<<< HEAD
             case 'resend-otp' : {
                 $fun = $obj->resendOtp($data);
                 return $fun;
                 }           
-=======
-            // case 'resend-otp' : {
-            //     // $fun = $obj->resendOtp($data);
-            //     return $fun;
-            //     }            
->>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
         }
     }
 
@@ -369,20 +359,12 @@ class main {
     }
 
     private function _isEndPointAccessibleForStudent($methodname) {
-<<<<<<< HEAD
         $arr = ['score-history-one','get-chart-by-keywords','get-chart-by-difficulty-level','submit-exam', 'get-exam-result-by-stud-id', 'get-info', 'give-feedback', 'get-exam-result', 'get-exam-result-details', 'get-exam-list-by-exam-type', 'update-profile', 'add-users-question', 'get-current-exam-result', 'get-ranking-list', 'get-feedback-que-list', 'initiate-payment', 'settle-payment', 'get-keyword-wise-student-result', 'get-exam-list-by-type', 'get-question-solution-list', 'get-exam-questions-by-exam-id', 'get-my-oredrs-my-test'];
-=======
-        $arr = ['get-chart-by-keywords','get-chart-by-difficulty-level','social-login','reset-password','register', 'verify-otp', 'login', 'submit-exam', 'get-exam-result-by-stud-id', 'get-info', 'give-feedback', 'get-exam-result', 'get-exam-result-details', 'get-exam-list-by-exam-type', 'update-profile', 'add-users-question', 'get-current-exam-result', 'get-ranking-list', 'get-feedback-que-list', 'initiate-payment', 'settle-payment', 'get-keyword-wise-student-result', 'get-exam-list-by-type', 'get-question-solution-list', 'get-exam-questions-by-exam-id'];
->>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
         return in_array($methodname, $arr);
     }
 
     private function _isEndPointAccessibleForadmin($methodname) {
-<<<<<<< HEAD
         $arr = [ 'save-questions', 'update-questions', 'add-exam-cat', 'edit-s-cat', 'add-exam-sub-cat', 'edit-exam-sub-cat', 'edit-exam-cat', 'get-exam-cat-list', 'get-cat-by-cat-id', 'get-sub-cat-by-cat-id', 'get-question-details-by-id', 'get-daily-10-mcqs', 'get-info', 'add-exam', 'exam-type-list', 'update-exam', 'auto-search-questions', 'add-feedback-questions', 'get-question-list', 'delete-question-by-id', 'get-exam-list', 'get-exam-sub-cat-list', 'update-exam-cat', 'delete-exam', 'chat-question-list', 'add-category-levels', 'get-category-level-list', 'update-category-level', 'get-category-level-by-id', 'get-category-list-by-level', 'get-feedback-ratings-by-exam-id'];
-=======
-        $arr = ['social-login','reset-password','register', 'verify-otp', 'login', 'save-questions', 'update-questions', 'add-exam-cat', 'edit-s-cat', 'add-exam-sub-cat', 'edit-exam-sub-cat', 'edit-exam-cat', 'get-exam-cat-list', 'get-cat-by-cat-id', 'get-sub-cat-by-cat-id', 'get-question-details-by-id', 'get-daily-10-mcqs', 'get-info', 'add-exam', 'exam-type-list', 'update-exam', 'auto-search-questions', 'add-feedback-questions', 'get-question-list', 'delete-question-by-id', 'get-exam-list', 'get-exam-sub-cat-list', 'update-exam-cat', 'delete-exam', 'chat-question-list', 'add-category-levels', 'get-category-level-list', 'update-category-level', 'get-category-level-by-id', 'get-category-list-by-level', 'get-feedback-ratings-by-exam-id'];
->>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
         return in_array($methodname, $arr);
     }
 
