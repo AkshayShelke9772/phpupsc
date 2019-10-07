@@ -4,7 +4,7 @@ class DB_CONNECT {
 
     protected $con;
     private $server = "mysql:host=localhost;dbname=upscmcqs";
-//    private $server = "mysql:host=127.0.0.1:3307;dbname=upscmcqs";
+    // private $server = "mysql:host=127.0.0.1:3307;dbname=upscmcqs";
     private $pass = "";
     private $user = "root";
     private $options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,);
