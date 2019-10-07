@@ -39,6 +39,10 @@ class studentModel
             $status = 'A';
             $is_Admin = $data->is_admin;
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
     //  { check user is already existed with email or phone and permenent_otp_verified is 1     
             $sql = "select * from student_master where (email_id ='$email' or phone_number='$contact')";
             $result = $this->con->query($sql);
@@ -69,6 +73,27 @@ class studentModel
                     return $res;
                 }   
 
+<<<<<<< HEAD
+=======
+=======
+            $sql = "INSERT INTO `student_master`(
+                `student_id`, `full_name`, `email_id`, `phone_number`, `nick_name`,
+                `address`, `password`,`is_admin`, `pin_code`, 
+                `created_date`, `updated_date`, `status`) VALUES (
+                    $stud_id, '$name', '$email', $contact, '$nickname',
+                     '$address', '$password',$is_Admin, $pin_code, 
+                     '$created_date', '$updated_date', '$status')";
+
+            if ($this->con->query($sql)) {
+                // var_dump($this->con->lastInsertId());die;
+                $res->status = true;
+                $res->message = 'User Registered Successfully';
+                $res->data['stud_id'] = $stud_id;
+            } else {
+                $res->status = false;
+                $res->message = 'Could not save data';
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
             }
             // user is not registered with this email-id or phone number yet
             else{
@@ -92,10 +117,25 @@ class studentModel
             } //
 
         } catch (PDOException $e) {
+<<<<<<< HEAD
             // if (strpos($e->getMessage(), 'phone_number') !== false || strpos($e->getMessage(), 'email_id') !== false) {
                 $res->status = false;
                 $res->message = "The Mobile-Number / Email-Id already registered";
             // }
+=======
+<<<<<<< HEAD
+            // if (strpos($e->getMessage(), 'phone_number') !== false || strpos($e->getMessage(), 'email_id') !== false) {
+                $res->status = false;
+                $res->message = "The Mobile-Number / Email-Id already registered";
+            // }
+=======
+            if (strpos($e->getMessage(), 'phone_number') !== false || strpos($e->getMessage(), 'email_id') !== false) {
+                
+                $res->status = false;
+                $res->message = "The Mobile-Number / Email-Id already registered";
+            }
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
         }
         $this->close = null;
         return $res;
@@ -237,6 +277,137 @@ class studentModel
     }
 
 
+<<<<<<< HEAD
+=======
+
+//     simple login :
+//     is_by_social_media_login field 0 
+
+// google ->
+
+//     1. exist with client id and email
+//         yes:
+//          successfull login & is_by_social_media_login field 1
+            
+//         only email:
+//             if user already exist but client id not match or not found and only email match 
+//                  client id update , login_by update , login , is_by_socila_media_login field 1 , 
+//                  profile_url update
+
+//     2. not exist 
+//         client id and email register.
+//             full_name , email, client-id , provider g/f , profile url , nickname.
+//             is_by_socila_media_login field 1
+
+    function socialLogin($data){
+
+        $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetch', 'data' => null];
+
+        if(!isset($data->email_id)){ return $res; }
+
+        $full_name = $data->full_name;
+        $nick_name = $data->nick_name;
+        $login_by = $data->login_by;
+        $email_id = $data->email_id;
+        $is_by_social_media_login = 1;
+        $client_id = $data->client_id;
+        $profile_image = $data->profile_image;
+        $is_admin_social_login = $data->is_admin_social_login;
+
+        $sql = "select * from student_master where (email_id='$email_id' or phone_number='$email_id')";
+        $result = $this->con->prepare($sql);
+        if ($result->execute()) {
+
+
+            $number_of_rows = $result->fetchColumn();
+            if ($number_of_rows > 0) { //user existed login with social media and update the social media only
+
+                $update_sql = "update student_master set permanent_otp_verified=1,full_name='$full_name' , nick_name='$nick_name' , login_by='$login_by' , client_id='$client_id' , is_by_social_media='$is_by_social_media_login' , profile_image='$profile_image' where email_id='$email_id'";
+
+                $update_result = $this->con->prepare($update_sql);
+                $update_result->execute();
+                if($update_result->rowCount() >= 0 || $update_result->rowCount() <= 1)
+                {
+                    $get_data_after_update = "select * from student_master where (email_id='$email_id' or phone_number='$email_id')";
+                    $obj = (object) [];
+                    foreach ($this->con->query($get_data_after_update) as $row) {
+                        $obj->user_id = $row['student_id'];
+                        $obj->full_name = $row['full_name'];
+                        $obj->email_id = $row['email_id'];
+                        $obj->phone_number = $row['phone_number'];
+                        $obj->nick_name = $row['nick_name'];
+                        $obj->address = $row['address'];
+                        $obj->profile_image =$row['profile_image'];
+                        $obj->is_verify_otp = $row['is_verify_otp'];
+                        $obj->password = $row['password'];
+                        $obj->is_admin = $row['is_admin'];
+                        $obj->pin_code = $row['pin_code'];
+                        $obj->is_by_social_media = $row['is_by_social_media'];
+                        $obj->login_by = $row['login_by'];
+                        $obj->client_id = $row['client_id'];
+                        $obj->Status = $row['Status'];
+                    }
+                $res->status = true;
+                $res->message = 'Student Login Successfull with social media';
+                $res->data['user_data'] = $obj;
+            }else{
+                $res->status = false;
+                $res->message = "User can't login with this method right now , please go mannually";
+            }
+
+         } else { // user not register yet , register user with social media details
+                     
+
+                    try {
+                        $stud_idd = $this->_getMaxTableId($this->con, 'student_master', 'student_id');
+                        $name = trim($full_name);
+                        $email = trim($email_id);
+                        $nickname = trim($nick_name);
+                        $is_Admin = $is_admin_social_login;
+                        $created_date = date('Y-m-d H:i:s');
+                        $updated_date = date('Y-m-d H:i:s');
+                        $status = 'A';
+                        $is_by_social_media = 1;
+                        $profileImage = $profile_image;
+
+                        // if user is not registered with our website password set to 0 firs time
+                        $sql = "INSERT INTO `student_master`(`student_id`, `password`,`profile_image`, `full_name`, `email_id`, `nick_name`,`is_admin`,`is_by_social_media`,`login_by`, `client_id`, `created_date`, `updated_date`, `status`) VALUES ($stud_idd,'0','$profileImage','$name', '$email', '$nickname', $is_Admin, $is_by_social_media, '$login_by','$client_id', '$created_date', '$updated_date', '$status')";
+
+                        if ($this->con->query($sql)) {
+                            
+                            $res->status = true;
+                            $res->message = 'Student Registered Successfully';
+                            @$obj->user_id = $stud_idd;
+                            $obj->full_name = $name;
+                            $obj->email_id = $email;
+                            $obj->phone_number = NULL;
+                            $obj->nick_name = $nickname;
+                            $obj->address = NULL;
+                            $obj->profile_image = $profileImage;
+                            $obj->is_admin = $is_admin_social_login;
+                            $obj->pin_code = NULL;
+                            $obj->is_by_social_media = $is_by_social_media;
+                            $obj->login_by = $login_by;
+                            $obj->Status = $status;
+                        
+                            $res->data['user_data'] = $obj;
+                            $this->close = null;
+
+                        }else{
+                            $res->status = false;
+                            $res->message = 'Student cant register with the social login , please try again';
+                        } 
+                    }catch (PDOException $e) {
+                            $res->status = false;
+                            $res->message = var_dump($this->con->errorInfo());die;;
+                        }//catch end
+                    } //else end
+        } //first if end
+        return $res;
+    }
+
+
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
 
     function saveQuestions($data) {
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be saved', 'data' => null];
@@ -449,6 +620,7 @@ class studentModel
      function getUserData($data) {
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetch for this user , Please try again', 'data' => null,'statusCode'=> NULL];
         $mobile = trim($data->mobile);
+<<<<<<< HEAD
 
         $sql = "select * from student_master where (email_id='$mobile' or phone_number='$mobile')";
         $result = $this->con->prepare($sql);
@@ -492,6 +664,81 @@ class studentModel
                 $result->execute();
                 $r = $result->fetch();
 
+=======
+<<<<<<< HEAD
+
+        $sql = "select * from student_master where (email_id='$mobile' or phone_number='$mobile')";
+        $result = $this->con->prepare($sql);
+        $result->execute();
+        // var_dump($result->rowCount());die;
+            
+
+        if ($result->rowCount() > 0 && $result->fetch()["password"] === sha1($data->password)) {
+            
+            if($this->isUserVerifiedPermanently($mobile)){
+                
+                $number_of_rows = $result->rowCount();
+                if ($number_of_rows > 0) {
+
+                    $obj = (object) [];
+                    foreach ($this->con->query($sql) as $row) {
+                        $obj->user_id = $row['student_id'];
+                        $obj->full_name = $row['full_name'];
+                        $obj->email_id = $row['email_id'];
+                        $obj->phone_number = $row['phone_number'];
+                        $obj->nick_name = $row['nick_name'];
+                        $obj->address = $row['address'];
+                        $obj->profile_image =$row["profile_image"];
+                        $obj->is_verify_otp = $row['is_verify_otp'];
+                        $obj->is_admin = $row['is_admin'];
+                        $obj->pin_code = $row['pin_code'];
+                        $obj->is_by_social_media = $row['is_by_social_media'];
+                        $obj->login_by = $row['login_by'];
+                        $obj->client_id = $row['client_id'];
+                        $obj->Status = $row['Status'];
+                    }
+                    $res->status = true;
+                    $res->message = 'Got Data Successfully';
+                    $res->data['user_data'] = $obj;
+                }else{ //username & password & otp verification found correct but data couldn't fetch 
+                    // from database
+                    return $res;
+                } 
+            } else { //valid username & pass but otp not verified
+
+                $result->execute();
+                $r = $result->fetch();
+
+=======
+        $sql = "select * from student_master where (email_id='$mobile' or phone_number='$mobile')";
+        $result = $this->con->prepare($sql);
+        if ($result->execute()) {
+            $number_of_rows = $result->fetchColumn();
+            if ($number_of_rows > 0) {
+                $obj = (object) [];
+                foreach ($this->con->query($sql) as $row) {
+                    $obj->user_id = $row['student_id'];
+                    $obj->full_name = $row['full_name'];
+                    $obj->email_id = $row['email_id'];
+                    $obj->phone_number = $row['phone_number'];
+                    $obj->nick_name = $row['nick_name'];
+                    $obj->address = $row['address'];
+                    $obj->profile_image =$row["profile_image"];
+                    $obj->is_verify_otp = $row['is_verify_otp'];
+                    $obj->password = $row['password'];
+                    $obj->is_admin = $row['is_admin'];
+                    $obj->pin_code = $row['pin_code'];
+                    $obj->is_by_social_media = $row['is_by_social_media'];
+                    $obj->login_by = $row['login_by'];
+                    $obj->client_id = $row['client_id'];
+                    $obj->Status = $row['Status'];
+                }
+                $res->status = true;
+                $res->message = 'Got Data Successfully';
+                $res->data['user_data'] = $obj;
+            } else {
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
                 $res->status = false;
                 $res->statusCode = 201;
                 $res->stud_id = $r["student_id"];
@@ -558,6 +805,7 @@ class studentModel
         $result = $this->con->prepare($sql);
 
         if ($result->execute() && $result->rowCount()>0) 
+<<<<<<< HEAD
         {
             $update_is_verify_at_zero = "update student_master set is_verify_otp=0 where (email_id='$username' or phone_number='$username')";
             $r = $this->con->prepare($update_is_verify_at_zero);
@@ -594,6 +842,61 @@ class studentModel
         {
             
             if($result->rowCount() >= 0 || $result->rowCount()<=1){
+=======
+        {
+<<<<<<< HEAD
+            $update_is_verify_at_zero = "update student_master set is_verify_otp=0 where (email_id='$username' or phone_number='$username')";
+            $r = $this->con->prepare($update_is_verify_at_zero);
+            $r->execute();
+ 
+            foreach($this->con->query(($sql)) as $row){
+                $res->stud_id = $row["student_id"];
+                $res->stud_username = $username;
+            };
+            $res->status = true;
+            
+        }else{
+            $res->status = false;
+            $res->message = "Username does not exist";
+        }
+
+        return $res;
+
+    }
+
+
+
+
+    function resetPassword($data){
+        $res = (object) ['status' => FALSE, 'message' => 'Data Could not be update', 'data' => null];
+
+        $username =  $data->mobile;
+        $user_new_password=sha1($data->user_new_password);
+
+        $sql = "update student_master set password='$user_new_password' where (email_id='$username' or phone_number='$username')";
+        $result = $this->con->prepare($sql);
+
+        if ($result->execute()) 
+        {
+            
+            if($result->rowCount() >= 0 || $result->rowCount()<=1){
+=======
+            
+            $number_of_rows = $result->fetchColumn();
+        
+            if ($number_of_rows > 0) {
+                
+                $update_is_verify_at_zero = "update student_master set is_verify_otp=0 where (email_id='$username' or phone_number='$username')";
+                $r = $this->con->prepare($update_is_verify_at_zero);
+                $r->execute();
+
+               foreach($this->con->query(($sql)) as $row){
+                $res->stud_id = $row["student_id"];
+                $res->stud_username = $username;
+               };
+
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
                 $res->status = true;
                 $res->message = "password changed successfull";
             }else{
@@ -605,6 +908,37 @@ class studentModel
             $res->message = "Probleme to update your password please try again";
         } 
         return $res;
+<<<<<<< HEAD
+=======
+    }
+    // reset passw
+
+
+    function resetPassword($data){
+        $res = (object) ['status' => FALSE, 'message' => 'Data Could not be update', 'data' => null];
+
+        $username =  $data->mobile;
+        $user_new_password=sha1($data->user_new_password);
+
+        $sql = "update student_master set password='$user_new_password' where (email_id='$username' or phone_number='$username')";
+        $result = $this->con->prepare($sql);
+
+        if ($result->execute()) 
+        {
+            
+            if($result->rowCount() >= 0 || $result->rowCount()<=1){
+                $res->status = true;
+                $res->message = "password changed successfull";
+            }else{
+                $res->status = false;
+                $res->message = "Password could not be update , Please try  Again";
+            }
+        }else{
+            $res->status = false;
+            $res->message = "Probleme to update your password please try again";
+        } 
+        return $res;
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
     }
     // reset passw
 
@@ -627,17 +961,41 @@ class studentModel
         return $res;
     }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
     
 	
 	    function verifyOtp($data) {
 
+<<<<<<< HEAD
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be saved', 'data' => null];
         
+=======
+        $res = (object) ['status' => FALSE, 'message' => 'Data Could not be saved', 'data' => null];
+        
+=======
+    function verifyOtp($data) {
+
+        $res = (object) ['status' => FALSE, 'message' => 'Data Could not be saved', 'data' => null];
+        $isForRegister= $data->is_for_registration;
+
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
         $mobile = $data->mobile;
         $otp = trim($data->otp);
         $sql = "select * from student_master where (email_id='$mobile' or phone_number='$mobile') and otp='$otp' and is_verify_otp = 0";
         $result = $this->con->prepare($sql);
+<<<<<<< HEAD
         if ($result->execute() && $result->rowCount() > 0) {
+=======
+<<<<<<< HEAD
+        if ($result->execute() && $result->rowCount() > 0) {
+=======
+        if ($result->execute()) {
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
 
             $number_of_rows = $result->fetchColumn();
 
@@ -650,7 +1008,15 @@ class studentModel
                     $minutes = $diff / 60;
                 }
                 if ($minutes < 10) {
+<<<<<<< HEAD
                     $updateSql = "update student_master set permanent_otp_verified=1 , is_verify_otp = 1 where phone_number='$mobile' or email_id='$mobile'";
+=======
+<<<<<<< HEAD
+                    $updateSql = "update student_master set permanent_otp_verified=1 , is_verify_otp = 1 where phone_number='$mobile' or email_id='$mobile'";
+=======
+                    $updateSql = "update student_master set permanent_otp_verified=1 is_verify_otp = 1 where phone_number='$mobile' or email_id='$mobile'";
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
                     $sql1 = $this->con->prepare($updateSql);
                     if ($sql1->execute()) {
                         $res->status = true;
@@ -662,16 +1028,51 @@ class studentModel
                 } else {
 
                     // if($isForRegister){
+<<<<<<< HEAD
                     //     $deletesql = "delete from student_master where phone_number='$mobile' and otp='$otp'";
+=======
+<<<<<<< HEAD
+                    //     $deletesql = "delete from student_master where phone_number='$mobile' and otp='$otp'";
+=======
+                        
+                    //     $deletesql = "delete fr student_master set  where phone_number='$mobile' and otp='$otp'";
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
                     //     $sql2 = $this->con->prepare($deletesql);
                     //     if ($sql2->execute()) {
                     //         $res->status = false;
                     //         $res->message = 'Timeout. Please fill the form again'; //otp expire
                     //     }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
                     // }else{
                         $res->status = false;
                         $res->message ="OTP Verification timeout Please try again or resend it";
                     // }
+<<<<<<< HEAD
+=======
+=======
+
+                    // }else{
+                    //     $res->status = false;
+                    //     $res->message ="OTP Verification timeout Please try again";
+                    // }
+
+                    if($isForRegister){
+                        $deletesql = "delete from student_master where phone_number='$mobile' and otp='$otp'";
+                        $sql2 = $this->con->prepare($deletesql);
+                        if ($sql2->execute()) {
+                            $res->status = false;
+                            $res->message = 'Timeout. Please fill the form again'; //otp expire
+                        }
+                    }else{
+                        $res->status = false;
+                        $res->message ="OTP Verification timeout Please try again";
+                    }
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
                 }
             } else {
                 $res->status = false;
@@ -682,6 +1083,7 @@ class studentModel
             $res->message = 'Invalid OTP , Please try again or resend it'; //Invalid OTP
         }
         return $res;
+
     }
 
 
@@ -876,6 +1278,10 @@ class studentModel
 
 
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
 function scoreHistoryOne($user_id){
 
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetched', 'data' => null];
@@ -924,6 +1330,11 @@ function scoreHistoryOne($user_id){
     }
 
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
 
     
 
@@ -1192,8 +1603,17 @@ INNER JOIN `exam_master` e ON e.`exam_id` = eqm.`exam_id` INNER JOIN `exam_type_
     function getExamByExamTypeAndValidity($exam_id) {
         $today = date('Y-m-d H:i:s');
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetched', 'data' => null];
+<<<<<<< HEAD
      /*   $sql = sprintf("SELECT ex.`exam_id`,ex.`duration`,ex.`exam_name`, ex.`no_of_que` FROM `exam_master` ex WHERE ex.`exam_id` =  %s AND ex.`start_date` <= '%s' AND '%s' <= ex.`end_date`", $exam_id, $today, $today); */
 		  $sql = sprintf("SELECT ex.`exam_id`,ext.`duration`,ex.`exam_name`, ex.`no_of_que` FROM `exam_master` ex INNER JOIN `exam_type_master` ext ON ex.`exam_type_id` = ext.`id`  WHERE ex.`exam_id` =  %s", $exam_id);
+=======
+<<<<<<< HEAD
+     /*   $sql = sprintf("SELECT ex.`exam_id`,ex.`duration`,ex.`exam_name`, ex.`no_of_que` FROM `exam_master` ex WHERE ex.`exam_id` =  %s AND ex.`start_date` <= '%s' AND '%s' <= ex.`end_date`", $exam_id, $today, $today); */
+		  $sql = sprintf("SELECT ex.`exam_id`,ext.`duration`,ex.`exam_name`, ex.`no_of_que` FROM `exam_master` ex INNER JOIN `exam_type_master` ext ON ex.`exam_type_id` = ext.`id`  WHERE ex.`exam_id` =  %s", $exam_id);
+=======
+        $sql = sprintf("SELECT ex.`exam_id`,ex.`duration`,ex.`exam_name`, ex.`no_of_que` FROM `exam_master` ex WHERE ex.`exam_id` =  %s AND ex.`start_date` <= '%s' AND '%s' <= ex.`end_date`", $exam_id, $today, $today);
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
         $result = $this->con->prepare($sql);
         if ($result->execute()) {
             $number_of_rows = $result->fetchColumn();
@@ -1349,6 +1769,16 @@ INNER JOIN `exam_master` e ON e.`exam_id` = eqm.`exam_id` INNER JOIN `exam_type_
     function updateProfile($data) {
         global $auth_obj;
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be update', 'data' => null];
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+        
+        // $updated_date = date('Y-m-d H:i:s');
+        // $updated_by = 1;
+
+>>>>>>> 476766a066ec95fbbc51041dbafa6d9c55d48104
+>>>>>>> 1fab769410311092f73a29b2671c24a0fdad4fc1
         $user_id = $auth_obj->user->user_id;
         $stmt = $this->con->prepare("update `student_master` set `full_name` = '$data->name', `nick_name` = '$data->nickname', `email_id` = '$data->email', `phone_number` = '$data->phone' where `student_id` = '$user_id' ");
         if ($stmt->execute()) {

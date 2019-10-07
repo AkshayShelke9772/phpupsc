@@ -725,9 +725,7 @@ class adminModel {
 
     function changePassword($userId, $newPassword) {
 
-        $sql = "select * from forgotPass where otp=' $otp
-
-                 '";
+        $sql = "select * from forgotPass where otp=' $userId'";
         $result = $this->con->prepare($sql);
 
         if (mysqli_num_rows($result) > 0) {

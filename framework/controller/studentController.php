@@ -19,7 +19,6 @@ class studentController {
         global $auth_obj;
         $auth_obj = (object) [];
         $res = (object) ['statusCode' => 403, 'message' => 'Data not found in database,please try again', 'data' => null];
-
         $db = new studentModel();
         $response = $db->getUserData($data);
 
