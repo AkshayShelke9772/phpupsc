@@ -13,109 +13,98 @@ class studentController {
     function __construct() {
         
     }
-
+	
+	    // student controller
     function login($data) {
         global $auth_obj;
         $auth_obj = (object) [];
-        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        $res = (object) ['statusCode' => 403, 'message' => 'Data not found in database,please try again', 'data' => null];
+
         $db = new studentModel();
         $response = $db->getUserData($data);
+
         $helper = new helper();
+
         if ($response->status) {
-            // check if the is_verfiy_otp is 1 or not
             $user_data = $response->data['user_data'];
-            // check if password is null or not
-            // if it is null means user regester with social media
-            // if no user register through  our website
-            if (strlen($user_data->password) == 0) {
-                if (isset($user_data->client_id)) {
-                    // update the client id and login by field  
-                    $updateRs = $db->updateClientId($data, $user_data->user_id);
-                    $res->statusCode = 200;
-                    $res->message = 'Logged in Successfully';
-                }
-            } else
-            if (($user_data->password === sha1($data->password))) {
+        
                 $res->statusCode = 200;
                 $res->message = 'Logged in Successfully';
-                unset($user_data->password);
+
                 //  call the helper function for generating token;
                 $token = $helper->getAuthorization($user_data);
+
                 $res->data['user_data'] = $user_data;
                 $res->data['user_data']->token = $token;
                 $auth_obj->user = $res->data['user_data'];
-            } else if ($user_data->is_verify_otp == '0') {
-                // send OTP then verify 
-                $otpCode = $helper->generateRandomOtp();
-//                $sendOtpRs = new communicator($otpCode);
-//                if ($sendOtpRs->status) {
-                // save OTP in database
-                $stud_id = $user_data->user_id;
-                $savRs = $db->saveOtp($stud_id, $otpCode);
-                if (!$savRs->status) {
-                    $res->statusCode = $savRs->status ? 200 : 403;
-                    $res->message = $savRs->message;
-                }
-//                }
-            } else {
-                $res->statusCode = 403;
-                $res->message = 'Wrong Password';
-            }
+                
         } else {
-            // check if the client id is set or not
-            // if yes means user is logged in by social media
-            // else user is logged in by our website 
-            $regersterRs = $db->register($data, 0);
-            $res->statusCode = $regersterRs->status ? 200 : 403;
-            $res->message = $regersterRs->message;
-            if ($regersterRs->status) {
-                // send OTP then verify 
-                $stud_id = $regersterRs->data['stud_id'];
-                $otpCode = $helper->generateRandomOtp();
-//                $sendOtpRs = new communicator($otpCode);
-//                if ($sendOtpRs->status) 
-                // save OTP in database
-                $savRs = $db->saveOtp($stud_id, $otpCode);
-                if (!$savRs->status) {
-                    $res->statusCode = $savRs->status ? 200 : 403;
-                    $res->message = $savRs->message;
-                } else {
-                    $data->user_id = $stud_id;
-                    $token = $helper->getAuthorization($data);
-                    $res->data['user_data'] = $data;
-                    $res->data['user_data']->token = $token;
-                    $auth_obj->user = $res->data['user_data'];
-                }
-//                }
-            }
-            // user is not registered 
-//            $res->statusCode = 403;
-//            $res->message = 'Your not register with us. Please register first';
+                // it means user existed but not verified need to verify through OTP               
+                if($response->statusCode == 201)
+                    {
+                       return $this->sendOtpOnEmailOrMobile($response->stud_id,$response->mobile,$response->email);
+                    }
+                $res->status = 403;
+                $res->message = $response->message;
+            
         }
         return $res;
     }
+	
 
-    function register($methodname, $data, $is_Admin) {
+
+    function socialLogin($data){
+        global $auth_obj;
+        $auth_obj = (object) [];
+        $res = (object) ['statusCode' => 403, 'message' => 'User Could Not be Login,please try again', 'data' => null];
+        $db = new studentModel();
+        $response = $db->socialLogin($data);
+        $helper = new helper();
+        if ($response->status) {
+
+            $user_data = $response->data['user_data'];
+            unset($user_data->password);
+            $token = $helper->getAuthorization($user_data);
+            $res->data['user_data'] = $user_data;
+            $res->data['user_data']->token = $token;
+            $auth_obj->user = $res->data['user_data'];
+            
+            $res->statusCode = 200;
+            $res->message = 'Logged in Successfully';
+            
+        } else {
+
+                $res->statusCode = 403;
+                $res->message = $response->message;
+            
+        }
+        return $res;
+
+    }
+
+ // registeration 
+ function register($methodname, $data, $is_Admin) {
+        
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+
         if (isset($data->name) && isset($data->password)) {
             $db = new studentModel();
-            $response = $db->register($data, $is_Admin);
+            $response=null;
+            // if email and contact number not valid entered then
+            if(is_numeric($data->contact) && filter_var($data->email, FILTER_SANITIZE_EMAIL)) {
+                $response = $db->register($data, $is_Admin);
+            }else{ 
+                return (object) ['statusCode' => 403, 'message' => 'Invalid format of Email or mobile number', 'data' => null];
+            }
+
             if ($response->status) {
-                $res->statusCode = 200;
-                $res->message = $response->message;
-                // send OTP for the mobile number
-                $hlpr = new helper();
-                $otpCode = $hlpr->generateRandomOtp();
-//                $sendOtpRs = new communicator($otpCode);
-//                if ($sendOtpRs->status) {
-                // save OTP in database
+                
+                $stud_contact=$data->contact;
+                $stud_email=$data->email;
                 $stud_id = $response->data['stud_id'];
-                $savRs = $db->saveOtp($stud_id, $otpCode);
-                if (!$savRs->status) {
-                    $res->statusCode = $savRs->status ? 200 : 403;
-                    $res->message = $savRs->message;
-                }
-//                }
+
+                return $this->sendOtpOnEmailOrMobile($stud_id,$stud_contact,$stud_email);
+                
             } else {
                 $res->statusCode = 403;
                 $res->message = $response->message;
@@ -126,7 +115,77 @@ class studentController {
         }
         return $res;
     }
+ 
+ 
+ 
+    // function check the entered data for otp verification is correct or not 
+    // also responsible to generate an OTP and save in db
+    // also check on which OTP is sended 
+    function sendOtpOnEmailOrMobile($stud_id=NULL,$mobile=NULL,$email=NULL)
+    {
+        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        
+        if(is_numeric($mobile) || filter_var($email, FILTER_SANITIZE_EMAIL)) {
 
+            $hlpr = new helper();
+            $otpCode = $hlpr->generateRandomOtp();
+
+            $db = new studentModel();
+            $savOtpRs = $db->saveOtp($stud_id, $otpCode);
+
+            if($savOtpRs->status){
+                //OTP saved success in database
+                $otpMessage ="Your OTP for UPSC MCQ's ".$otpCode." Do not share with anyone! Thank You";
+                        
+                $verifyByMobOrNot=0;
+
+                if($mobile !== NULL && is_numeric($mobile)) //Check  mobile number is entered or not
+                { //username is mobile number
+                    $SmsGatewayHubSender = new SmsGatewayHubSender();
+                    if($SmsGatewayHubSender->sendSms($otpMessage,(Int)$mobile)){
+                        // OTP send success to mobile
+                        $verifyByMobOrNot = 1;
+                        $res->statusCode=204;
+                        $res->message = "OTP send succesfull to ".$mobile." , please verify OTP";
+                        return $res;
+                    }else{
+                        // OTP not send succes lets try to send via email
+                        $verifyByMobOrNot = 2;
+                    }
+                }
+                        
+                // if entered mobile number not valid or mobile valid but OTP not send success
+                // then send on email id
+                if(!filter_var($email, FILTER_SANITIZE_EMAIL) === false && ($email !== NULL || $verifyByMobOrNot === 2)){
+                    //username is email
+                    $sendmail = new SendMail();
+                    if($sendmail->sendOTP($email,$otpMessage))
+                    { 
+                        $res->statusCode=200;
+                        $res->message = "OTP send succesfull to ".$email." , please verify OTP";
+                    }else{
+                        // OTP not send succes please try again
+                        $res->statusCode=403;
+                        $res->message = "OTP could not be send , Please try again";
+                    }
+                } 
+            }else{
+                        // OTP not save so please try again
+                        $res->statusCode = 403;
+                        $res->message = $savOtpRs->message;
+                }
+                            
+        }else{ // Entered email format or mobile number format invalid
+            return (object) ['statusCode' => 403, 'message' => 'Invalid format of Email or mobile number', 'data' => null];
+        }
+
+    return $res;
+    
+    }
+
+
+
+ 
     function submitExam($data) {
         global $auth_obj;
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
@@ -224,20 +283,31 @@ class studentController {
                 if ($response->status) {
                     $res->statusCode = 200;
                     $res->message = $response->message;
+                    if ($dv->qu_id == 2) {
+                        // save this feedback as rating against exam id
+                        $saveRatings = $db->saveRatings($dv->exam_id, $dv->rating);
+                        if (!$saveRatings->status) {
+                            break;
+                        }
+                    }
                 } else {
                     $res->statusCode = 403;
                     $res->message = $response->message;
                 }
+                unset($dv->comment);
+                unset($dv->exam_id);
             }
         } else {
             $res->statusCode = 403;
             $res->message = 'Please give feedback first';
         }
-
+        if ($res->statusCode == 200) {
+            $res->data['feedback'] = $data;
+        }
         return $res;
     }
-
-    function verifyOtp($methodname, $data) {
+	
+	function verifyOtp($methodname, $data) {
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
         $db = new studentModel();
         $response = $db->verifyOtp($data);
@@ -250,55 +320,43 @@ class studentController {
         }
         return $res;
     }
-
-
-    function forgotPassword($methodname, $data) {
+	
+	
+   function  resendOtp($data){
         
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
         $db = new studentModel();
         $response = $db->forgotPassword($data);
+
         if ($response->status) {
             $stud_id = $response->stud_id; // get for save OTP
             $stud_username = trim($response->stud_username); //get for send OTP on email / mobile
             
-            $helper = new helper();
-            $otpCode = $helper->generateRandomOtp();
-            $savOtpRs = $db->saveOtp($stud_id, $otpCode);
+            return $this->sendOtpOnEmailOrMobile($stud_id,$stud_username,$stud_username);
 
-            if($savOtpRs->status){
-                //OTP saved success in database
-                $otpMessage ="Your OTP for UPSC Summaries ".$otpCode." Do not share with anyone! Thank You";
+        } else {
+            //User not found to forgot password please try again 
+            $res->statusCode = 403;
+            $res->message = $response->message;
+        }
+        return $res;
+        
+    }
 
-                if(is_numeric($stud_username)) //Check username is email or mobile
-                { //username is mobile number
 
-                    $SmsGatewayHubSender = new SmsGatewayHubSender();
-                    if($SmsGatewayHubSender->sendSms($otpMessage,(Int)$stud_username)){
-                        $res->statusCode=200;
-                        $res->message = "OTP send succesfull to ".$stud_username." number , please verify OTP";
-                    }else{
-                        // OTP not send succes please try again
-                        $res->statusCode=403;
-                        $res->message = "OTP could not be send please try again  / You can try with registered Email-Id";
-                    }
-                }else{
-                    //username is email
-                    $sendmail = new SendMail();
-                    if($sendmail->sendOTP($stud_username,$otpMessage)){
-                        $res->statusCode=200;
-                        $res->message = "OTP send succesfull to ".$stud_username." , please verify OTP";
-                    }else{
-                        // OTP not send succes please try again
-                        $res->statusCode=403;
-                        $res->message = "OTP could not be send please try again / You can try with registered Mobile Number";
-                    }
-                }   
 
-            }else{
-                // OTP not save so please try again
-                $res->statusCode = 403;
-                $res->message = $savOtpRs->message;
-            }
+        function forgotPassword($methodname, $data) {
+        
+        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        $db = new studentModel();
+        $response = $db->forgotPassword($data);
+
+        if ($response->status) {
+            $stud_id = $response->stud_id; // get for save OTP
+            $stud_username = trim($response->stud_username); //get for send OTP on email / mobile
+            
+            return $this->sendOtpOnEmailOrMobile($stud_id,$stud_username,$stud_username);
+
         } else {
             //User not found to forgot password please try again 
             $res->statusCode = 403;
@@ -307,42 +365,112 @@ class studentController {
         return $res;
     }
 
+
+
+
+
+    // reset the user password after forgot password and verifying otp
+    function resetPassword($data){
+        
+        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        $db = new studentModel();
+
+        $response = $db->resetPassword($data);
+        
+        if ($response->status) {
+            $res->statusCode = 200;
+            $res->message = $response->message;
+        } else {
+            $res->statusCode = 403;
+            $res->message = $response->message;
+        }
+        return $res;
+    }
     
+
+    function getChartByDifficultyLevels($exam_id){
+        global $auth_obj;
+        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        $db = new studentModel();
+        $user_id = $auth_obj->user->user_id;
+        $response = $db->getChartByDifficultyLevels($exam_id);
+        if ($response->status) 
+        {   
+            return $response;
+        } else {
+            $res->statusCode = 403;
+            $res->message = $response->message;
+        }
+        return $res;
+    }
+
+    function getChartByKewords($exam_id){
+        global $auth_obj;
+        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        $db = new studentModel();
+        $user_id = $auth_obj->user->user_id;
+        $response = $db->getChartByKewords($exam_id);
+        if ($response->status) 
+        {   
+            return $response;
+        } else {
+            $res->statusCode = 403;
+            $res->message = $response->message;
+        }
+        return $res;
+    }
+	
+	function scoreHistoryOne(){
+        global $auth_obj;
+        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        $db = new studentModel();
+        $user_id = $auth_obj->user->user_id;
+        $response = $db->scoreHistoryOne($user_id);
+        if ($response->status) 
+        {   
+            $res->statusCode = 200;
+            $res->message = $response->message;
+            $res->data = $response->data;
+            return $res;
+        } else {
+            $res->statusCode = 403;
+            $res->message = $response->message;
+        }
+        return $res;
+    }
+    
+
+
+
     function updateProfile($data) {
         global $auth_obj;
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
         $db = new studentModel();
-        $old_pwd = $data->old_password;
-        $pwd = $auth_obj->user->password;
-        if (sha1($old_pwd) === $pwd) {
-            $response = $db->updateProfile($data);
-            if ($response->status) {
-                $userData = $_SESSION;
-                $helper = new helper();
-                $token = $helper->getAuthorization($userData['user']);
-                // get updated user data
-                $user_id = $auth_obj->user->user_id;
-                $userRs = $db->getUserDataById($user_id);
-                if ($userRs->status) {
-                    $ud = $userRs->data['user'];
-                    $response->data['user_data'] = $ud;
-                }
-                $response->data['user_data']->token = $token;
-                $auth_obj->user = $response->data['user_data'];
-                $res->statusCode = 200;
-                $res->message = $response->message;
-                $res->data['user_data'] = $response->data['user_data'];
-                unset($res->data['user_data']->password);
-            } else {
-                $res->statusCode = 403;
-                $res->message = $response->message;
+        $response = $db->updateProfile($data);
+        if ($response->status) {
+            $userData = $_SESSION;
+            $helper = new helper();
+            $token = $helper->getAuthorization($userData['user']);
+            // get updated user data
+            $user_id = $auth_obj->user->user_id;
+            $userRs = $db->getUserDataById($user_id);
+            if ($userRs->status) {
+                $ud = $userRs->data['user'];
+                $response->data['user_data'] = $ud;
             }
+            $response->data['user_data']->token = $token;
+            $auth_obj->user = $response->data['user_data'];
+            $res->statusCode = 200;
+            $res->message = $response->message;
+            $res->data['user_data'] = $response->data['user_data'];
+            unset($res->data['user_data']->password);
         } else {
             $res->statusCode = 403;
-            $res->message = 'Could not proceed as old password is incorrect.';
+            $res->message = $response->message;
         }
         return $res;
     }
+
 
     function addUsersQuestion($data) {
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
@@ -373,71 +501,169 @@ class studentController {
         return $res;
     }
 
-    function getCurrentExamResult($data) {
+    // function getCurrentExamResult($data) {
+    //     global $auth_obj;
+    //     $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+    //     $db = new studentModel();
+    //     $adminCore = new adminModel();
+    //     $stud_id = $auth_obj->user->user_id;
+    //     // first get total no of question against this exam
+    //     $result_obj = (object) ['pie_chart_val' => '', 'bar_graph_val' => ''];
+    //     $res_obj = (object) ['total_no_of_que' => 0, 'correct_answer' => 0, 'attempted' => 0, 'non_attempted' => 0];
+    //     $getTotalRs = $adminCore->getExamDetails($data->exam_id);
+    //     $exam_type_id = 1;
+    //     if ($getTotalRs->status) {
+    //         $details = $getTotalRs->data['detail'];
+    //         $exam_type_id = $details->exam_type_id;
+    //         $res_obj->total_no_of_que = $details->no_of_que;
+    //     }
+    //     // calculate correct answer                 
+    //     $correctAnswRS = $db->calculateTotalCorrectAnswer($data->exam_id, $stud_id);
+    //     if ($correctAnswRS->status) {
+    //         $res_obj->correct_answer = $correctAnswRS->data['answer']->correct_answer;
+    //     }
+    //     // calculate total attempted questions
+    //     $correctAnswRS = $db->calculateTotalAttemptedQuestions($data->exam_id, $stud_id);
+    //     if ($correctAnswRS->status) {
+    //         $res_obj->attempted = $correctAnswRS->data['answer']->attempted_que;
+    //     }
+    //     // calculate non-attempted que
+    //     $non_attempted_que = $res_obj->total_no_of_que - $res_obj->attempted;
+    //     $res_obj->non_attempted = $non_attempted_que;
+
+    //     $result_obj->pie_chart_val = $res_obj;
+
+    //     // 
+    //     $bar_graph_obj = (object) ['Your_score' => [], 'average_score' => [], 'highest_score' => []];
+
+
+    //     $result_obj->bar_graph_val = $bar_graph_obj;
+    //     // get exam wise pasr 10 records of students
+    //     // first get 10 exams in descending order by exam_type_id
+    //     $getAllExamsRs = $adminCore->getExamListgetExamListByExamType($exam_type_id);
+    //     if ($getAllExamsRs->status) {
+    //         $exams = $getAllExamsRs->data['exam_list'];
+    //         if (count($exams) > 0) {
+    //             foreach ($exams as $ex => $ev) {
+    //                 // calculate total my score against each exam
+    //                 $getTotalMyScoresRs = $db->getMyScoreForExamId($ev->exam_id);
+    //                 if ($getTotalMyScoresRs->status) {
+    //                     $resultData = $getTotalMyScoresRs->data['result_exam'];
+    //                     $bar_graph_obj->Your_score[] = $resultData->result_exam;
+    //                 }
+    //                 //calculate total average score against each exam
+    //                 $getAvgScoresRs = $db->getAverageScore($ev->exam_id);
+    //                 if ($getAvgScoresRs->status) {
+    //                     $avgData = $getAvgScoresRs->data['AverageResult'];
+    //                     $bar_graph_obj->average_score[] = $avgData->AverageResult;
+    //                 }
+    //                 //calculate highest score against each exam
+    //                 $getHighestScoresRs = $db->getHighestExamScore($ev->exam_id);
+    //                 if ($getHighestScoresRs->status) {
+    //                     $highestData = $getHighestScoresRs->data['highest_score'];
+    //                     $bar_graph_obj->highest_score[] = $highestData->highest_score;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     $res->statusCode = 200;
+    //     $res->message = 'Got Data';
+    //     $res->data = $result_obj;
+    //     return $res;
+    // }
+
+
+    //changes by priyanka ma'am 4-10-2019
+   function getCurrentExamResult($data) {
         global $auth_obj;
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
         $db = new studentModel();
         $adminCore = new adminModel();
         $stud_id = $auth_obj->user->user_id;
         // first get total no of question against this exam
-        $result_obj = (object) ['pie_chart_val' => '', 'bar_graph_val' => ''];
-        $res_obj = (object) ['total_no_of_que' => 0, 'correct_answer' => 0, 'attempted' => 0, 'non_attempted' => 0];
+        $result_obj = (object) ['total_score' => '', 'my_score' => '', 'pie_chart_val' => '', 'bar_graph_val' => '', 'feedback' => ''];
+        $obj = (object) ['pieChartLabels' => ['Correct', 'Incorrect', 'Unattempted'], 'pieChartData' => []];
+
         $getTotalRs = $adminCore->getExamDetails($data->exam_id);
-        $exam_type_id = 1;
+//        $exam_type_id = 1;
         if ($getTotalRs->status) {
             $details = $getTotalRs->data['detail'];
             $exam_type_id = $details->exam_type_id;
-            $res_obj->total_no_of_que = $details->no_of_que;
-        }
-        // calculate correct answer                 
-        $correctAnswRS = $db->calculateTotalCorrectAnswer($data->exam_id, $stud_id);
-        if ($correctAnswRS->status) {
-            $res_obj->correct_answer = $correctAnswRS->data['answer']->correct_answer;
-        }
-        // calculate total attempted questions
-        $correctAnswRS = $db->calculateTotalAttemptedQuestions($data->exam_id, $stud_id);
-        if ($correctAnswRS->status) {
-            $res_obj->attempted = $correctAnswRS->data['answer']->attempted_que;
-        }
-        // calculate non-attempted que
-        $non_attempted_que = $res_obj->total_no_of_que - $res_obj->attempted;
-        $res_obj->non_attempted = $non_attempted_que;
+            $no_of_qu = $details->no_of_que;
+		    // as per question contains 2 marks 
+            // calculate total marks
+            $total_marks = $no_of_qu * 2;
+            $result_obj->total_score = $total_marks;
+			// calculate correct answer                 
+            $correctAnswRS = $db->calculateTotalCorrectAnswer($data->exam_id, $stud_id);
+            if ($correctAnswRS->status) {
+//            $res_obj->correct_answer = $correctAnswRS->data['answer']->correct_answer;
+                $obj->pieChartData[] = intval($correctAnswRS->data['answer']->correct_answer) * 2;
+               $result_obj->my_score = intval($correctAnswRS->data['answer']->correct_answer) * 2;           
+		   }
+            // calculate total attempted questions
+            $attempted = 0;
+            $correctRS = $db->calculateTotalAttemptedQuestions($data->exam_id, $stud_id);
+            if ($correctRS->status) {
+                $attempted = $correctRS->data['answer']->attempted_que;
+                $incorrect = $attempted - $correctAnswRS->data['answer']->correct_answer;
+                $obj->pieChartData[] = $incorrect;
+            }
+            // calculate non-attempted que
+            $non_attempted_que = $no_of_qu - $attempted;
+            $obj->pieChartData[] = $non_attempted_que;
+            $result_obj->pie_chart_val = $obj;
 
-        $result_obj->pie_chart_val = $res_obj;
+            $bar_graph_obj = [];
+            $obj1 = (object) ['data' => [], 'label' => 'Your_score'];
+            $obj2 = (object) ['data' => [], 'label' => 'average_score'];
+            $obj3 = (object) ['data' => [], 'label' => 'highest_score'];
 
-        // 
-        $bar_graph_obj = (object) ['Your_score' => [], 'average_score' => [], 'highest_score' => []];
 
+            // get exam wise pasr 10 records of students
+            // first get 10 exams in descending order by exam_type_id
+            $getAllExamsRs = $adminCore->getExamListByExamType($exam_type_id);
+            if ($getAllExamsRs->status) {
+                $exams = $getAllExamsRs->data['exam_list'];
+                if (count($exams) > 0) {
+                    foreach ($exams as $ex => $ev) {
+                        // calculate total my score against each exam
+                        $getTotalMyScoresRs = $db->getMyScoreForExamId($ev->exam_id);
+                        if ($getTotalMyScoresRs->status) {
+                            $resultData = $getTotalMyScoresRs->data['result_exam'];
+//                        $bar_graph_obj->Your_score[] = $resultData->result_exam;
+                            $obj1->data[] = round($resultData->result_exam, 2);
+                            $bar_graph_obj[] = $obj1;
+                        }
+                        //calculate total average score against each exam
+                        $getAvgScoresRs = $db->getAverageScore($ev->exam_id);
+                        if ($getAvgScoresRs->status) {
+                            $avgData = $getAvgScoresRs->data['AverageResult'];
+//                        $bar_graph_obj->average_score[] = $avgData->AverageResult;
+                            $obj2->data[] = round($avgData->AverageResult, 2);
+                            $bar_graph_obj[] = $obj2;
+                        }
 
-        $result_obj->bar_graph_val = $bar_graph_obj;
-        // get exam wise pasr 10 records of students
-        // first get 10 exams in descending order by exam_type_id
-        $getAllExamsRs = $adminCore->getExamListByExamType($exam_type_id);
-        if ($getAllExamsRs->status) {
-            $exams = $getAllExamsRs->data['exam_list'];
-            if (count($exams) > 0) {
-                foreach ($exams as $ex => $ev) {
-                    // calculate total my score against each exam
-                    $getTotalMyScoresRs = $db->getMyScoreForExamId($ev->exam_id);
-                    if ($getTotalMyScoresRs->status) {
-                        $resultData = $getTotalMyScoresRs->data['result_exam'];
-                        $bar_graph_obj->Your_score[] = $resultData->result_exam;
-                    }
-                    //calculate total average score against each exam
-                    $getAvgScoresRs = $db->getAverageScore($ev->exam_id);
-                    if ($getAvgScoresRs->status) {
-                        $avgData = $getAvgScoresRs->data['AverageResult'];
-                        $bar_graph_obj->average_score[] = $avgData->AverageResult;
-                    }
-                    //calculate highest score against each exam
-                    $getHighestScoresRs = $db->getHighestExamScore($ev->exam_id);
-                    if ($getHighestScoresRs->status) {
-                        $highestData = $getHighestScoresRs->data['highest_score'];
-                        $bar_graph_obj->highest_score[] = $highestData->highest_score;
+                        //calculate highest score against each exam
+                        $getHighestScoresRs = $db->getHighestExamScore($ev->exam_id);
+                        if ($getHighestScoresRs->status) {
+                            $highestData = $getHighestScoresRs->data['highest_score'];
+//                        $bar_graph_obj->highest_score[] = $highestData->highest_score;
+                            $obj3->data [] = round($highestData->highest_score, 2);
+                            $bar_graph_obj[] = $obj3;
+                        }
                     }
                 }
             }
+            $result_obj->bar_graph_val = $bar_graph_obj;
+            // get feedback of this exam by exam id and stu id
+            $getFeedbackRs = $adminCore->getFeedbackRatingsByExamId($data->exam_id);
+            if ($getFeedbackRs->status) {
+                $feedback = $getFeedbackRs->data['feedback'];
+            }
+            $result_obj->feedback = $feedback;
         }
+
         $res->statusCode = 200;
         $res->message = 'Got Data';
         $res->data = $result_obj;
@@ -452,6 +678,8 @@ class studentController {
         $stud_id = $auth_obj->user->user_id;
         $getDetailRs = $adminCore->getExamDetails($data->exam_id);
         $exam_type_id = 1;
+        $all_india_ranking = [];
+        $static_ranking = [];
         if ($getDetailRs->status) {
             $details = $getDetailRs->data['detail'];
             $exam_type_id = $details->exam_type_id;
@@ -460,8 +688,7 @@ class studentController {
             $total_stu = $db->getTotalStudentsByExamId($data->exam_id);
             if ($total_stu->status) {
                 $allStu = $total_stu->data['student_list'];
-                $all_india_ranking = [];
-                $static_ranking = [];
+                
                 foreach ($allStu as $ak => $av) {
                     if (strtotime($exam_end_date) >= strtotime($av->attempted_date)) {
                         $all_india_ranking[] = $av;
@@ -647,6 +874,9 @@ class studentController {
         $db = new studentModel();
         $exam_id = $data->exam_id;
         $user_id = $auth_obj->user->user_id;
+        
+        // var_dump($exam_id);
+        // die;
         // first get exam by checking start date and end date
         $getRs = $db->getExamByExamTypeAndValidity($exam_id);
         if ($getRs->status) {
@@ -676,23 +906,23 @@ class studentController {
 
     function getExamList($data) {
         $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
-        $db = new adminModel();
+        $db = new studentModel();
         $core = new adminModel();
         $response = $core->getExamList($data);
         if ($response->status) {
             $exam_list = $response->data['exam_list'];
-//            if (count($exam_list) > 0) {
-            // get questions against exam id
-//                foreach ($exam_list as $ek => $ev) {
-//                    $exam_id = $ev->exam_id;
-//                    $getQuestionsRs = $core->getQuestionsAgainstExamId($exam_id);
-//                    if ($getQuestionsRs->status) {
-//                        $ev->questions = $getQuestionsRs->data['question_set'];
-//                    } else {
-//                        $ev->questions = [];
-//                    }
-//                }
-//            }
+        if (count($exam_list) > 0) {
+                //get average ratings by exam_id
+                foreach ($exam_list as $ek => $ev) {
+                    $exam_id = $ev->exam_id;
+                    $getAvgRateRs = $db->getAverageRatingsByExamId($exam_id);
+                    if ($getAvgRateRs->status) {
+                        $ev->ratings = $getAvgRateRs->data['rating']->avg_rating;
+                    } else {
+                        $ev->ratings = 0;
+                    }
+                }
+            }
             $res->statusCode = 200;
             $res->message = $response->message;
             $res->data['exam_list'] = $response->data['exam_list'];
@@ -800,6 +1030,35 @@ class studentController {
             $res->statusCode = $res->status ? 200 : 403;
             return $res;
         }
+    }
+
+    function getAllMyOrdersAndMyTest($data) {
+        global $auth_obj;
+        $res = (object) ['statusCode' => 500, 'message' => 'Something Went Wrong', 'data' => null];
+        $db = new studentModel();
+        $stu_id = $auth_obj->user->user_id;
+        $getMyTestRs = $db->getAllTestByStudentId($stu_id);
+        $res->data['my_test']  = [];
+		if ($getMyTestRs->status) {
+            $res->statusCode = 200;
+            $res->message = $getMyTestRs->message;
+			
+			if(count($getMyTestRs->data['my_test']) > 0){
+			$res->data['my_test'] = $getMyTestRs->data['my_test'];	
+			}
+            
+        }
+        $getMyOrders = $db->getAllOrdersByStudentId($stu_id);
+        $res->data['my_orders']  = [];
+		if ($getMyOrders->status) {
+            $res->statusCode = 200;
+            $res->message = $getMyOrders->message;
+			if(count($getMyTestRs->data['my_test']) > 0){
+			$res->data['my_orders'] = $getMyOrders->data['my_orders'];
+			}
+			
+        }
+        return $res;
     }
 
     private

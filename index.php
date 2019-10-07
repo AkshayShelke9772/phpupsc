@@ -26,7 +26,7 @@ class main {
             $endPoint = $arr[2];
             $method_name = $arr[3];
 
-            $deny_access_arr = ['register', 'login', 'verify-otp','forgot-password'];//no need authorization
+            $deny_access_arr = ['resend-otp','social-login','register', 'login', 'verify-otp','forgot-password','reset-password'];//no need authorization
 
             if (in_array($method_name, $deny_access_arr)) {
                 $apiRes = $this->working($endPoint, $method_name, $requested_method, $data, false);
@@ -77,6 +77,7 @@ class main {
     function student($methodname, $data) {
         $obj = new studentController ();
         $std_cont = new studentController();
+
         switch ($methodname) {
             case 'get-exam-questions-by-exam-id' : {
                     $fun = $obj->getWeeklyTwentyMCQs($data);
@@ -140,11 +141,30 @@ class main {
                     $fun = $obj->getQuestionsSolutionListByExamId($data);
                     return $fun;
                 }
+            case 'get-chart-by-difficulty-level' :{
+                    $exam_id = $data->exam_id;
+                    $fun = $obj->getChartByDifficultyLevels($exam_id);
+                    return $fun;
+                }
+            case 'get-chart-by-keywords' :{
+                    $exam_id = $data->exam_id;
+                    $fun = $obj->getChartByKewords($exam_id);
+                    return $fun;
+                }    
+			case 'get-my-oredrs-my-test' : {
+                 $fun = $obj->getAllMyOrdersAndMyTest($data);
+                 return $fun;
+                }
+			case 'score-history-one' :{
+                 $fun = $obj->scoreHistoryOne();
+                 return $fun;
+                }    
         }
     }
 
     function admin($methodname, $data) {
         $obj = new adminController ();
+        
         switch ($methodname) {
             case 'save-questions' : {
                     $fun = $obj->saveQuestions($data);
@@ -299,10 +319,22 @@ class main {
                     $fun = $obj->forgotPassword($methodname, $data);
                     return $fun;
                 }  
+            case 'reset-password' : {
+                    $fun = $obj->resetPassword($data);
+                    return $fun;
+                }    
             case 'login' : {
                     $fun = $obj->login($data);
                     return $fun;
+                } 
+            case 'social-login' : {
+                    $fun = $obj->socialLogin($data);
+                    return $fun;
                 }
+            case 'resend-otp' : {
+                $fun = $obj->resendOtp($data);
+                return $fun;
+                }           
         }
     }
 
@@ -327,12 +359,12 @@ class main {
     }
 
     private function _isEndPointAccessibleForStudent($methodname) {
-        $arr = ['register', 'verify-otp', 'login', 'submit-exam', 'get-exam-result-by-stud-id', 'get-info', 'give-feedback', 'get-exam-result', 'get-exam-result-details', 'get-exam-list-by-exam-type', 'update-profile', 'add-users-question', 'get-current-exam-result', 'get-ranking-list', 'get-feedback-que-list', 'initiate-payment', 'settle-payment', 'get-keyword-wise-student-result', 'get-exam-list-by-type', 'get-question-solution-list', 'get-exam-questions-by-exam-id'];
+        $arr = ['score-history-one','get-chart-by-keywords','get-chart-by-difficulty-level','submit-exam', 'get-exam-result-by-stud-id', 'get-info', 'give-feedback', 'get-exam-result', 'get-exam-result-details', 'get-exam-list-by-exam-type', 'update-profile', 'add-users-question', 'get-current-exam-result', 'get-ranking-list', 'get-feedback-que-list', 'initiate-payment', 'settle-payment', 'get-keyword-wise-student-result', 'get-exam-list-by-type', 'get-question-solution-list', 'get-exam-questions-by-exam-id', 'get-my-oredrs-my-test'];
         return in_array($methodname, $arr);
     }
 
     private function _isEndPointAccessibleForadmin($methodname) {
-        $arr = ['register', 'verify-otp', 'login', 'save-questions', 'update-questions', 'add-exam-cat', 'edit-s-cat', 'add-exam-sub-cat', 'edit-exam-sub-cat', 'edit-exam-cat', 'get-exam-cat-list', 'get-cat-by-cat-id', 'get-sub-cat-by-cat-id', 'get-question-details-by-id', 'get-daily-10-mcqs', 'get-info', 'add-exam', 'exam-type-list', 'update-exam', 'auto-search-questions', 'add-feedback-questions', 'get-question-list', 'delete-question-by-id', 'get-exam-list', 'get-exam-sub-cat-list', 'update-exam-cat', 'delete-exam', 'chat-question-list', 'add-category-levels', 'get-category-level-list', 'update-category-level', 'get-category-level-by-id', 'get-category-list-by-level', 'get-feedback-ratings-by-exam-id'];
+        $arr = [ 'save-questions', 'update-questions', 'add-exam-cat', 'edit-s-cat', 'add-exam-sub-cat', 'edit-exam-sub-cat', 'edit-exam-cat', 'get-exam-cat-list', 'get-cat-by-cat-id', 'get-sub-cat-by-cat-id', 'get-question-details-by-id', 'get-daily-10-mcqs', 'get-info', 'add-exam', 'exam-type-list', 'update-exam', 'auto-search-questions', 'add-feedback-questions', 'get-question-list', 'delete-question-by-id', 'get-exam-list', 'get-exam-sub-cat-list', 'update-exam-cat', 'delete-exam', 'chat-question-list', 'add-category-levels', 'get-category-level-list', 'update-category-level', 'get-category-level-by-id', 'get-category-list-by-level', 'get-feedback-ratings-by-exam-id'];
         return in_array($methodname, $arr);
     }
 

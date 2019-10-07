@@ -1128,31 +1128,87 @@ class adminModel {
         return $res;
     }
 
+//     function getExamList($data) {
+//         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetched', 'data' => null];
+//         $sql = 'Select * From `exam_master` Where `Status` = "A" AND `is_publish` = 1 ';
+//         if (!is_null($data)) {
+//             $exam_type_id = $data->exam_type_id;
+//             $sql .= ' AND `exam_type_id` = ' . $exam_type_id;
+//         }
+//         $sql .= ' ORDER BY `created_date` DESC';
+//         $arr = [];
+//         $result = $this->con->prepare($sql);
+//         if ($result->execute()) {
+//             $arr = [];
+//             $number_of_rows = $result->fetchColumn();
+//             if ($number_of_rows > 0) {
+//                 foreach ($this->con->query($sql) as $row) {
+//                     $obj = (object) [];
+//                     $obj->exam_id = $row['exam_id'];
+//                     $obj->exam_name = $row['exam_name'];
+//                     $obj->description = $row['description'];
+//                     $obj->no_of_que = $row['no_of_que'];
+//                     $obj->is_penaulty = $row['is_penaulty'];
+//                     $obj->start_date = $row['start_date'];
+//                     $obj->end_date = $row['end_date'];
+// //                    $obj->start_time = date('h:i a', strtotime($row['start_time']));
+// //                    $obj->end_time = date('h:i a', strtotime($row['end_time']));
+//                     $obj->duration = $row['duration'];
+//                     $obj->exam_type_id = $row['exam_type_id'];
+//                     $obj->category_id = $row['category_id'];
+//                     $obj->sub_cat_id = $row['sub_cat_id'];
+//                     $obj->is_publish = $row['is_publish'];
+//                     $obj->created_date = $row['created_date'];
+//                     $obj->created_by = $row['created_by'];
+//                     $obj->updated_date = $row['updated_date'];
+//                     $obj->updated_by = $row['updated_by'];
+//                     $obj->Status = $row['Status'];
+//                     array_push($arr, $obj);
+//                 }
+//                 $res->status = true;
+//                 $res->message = 'Got Data Successfully';
+//                 $res->data['exam_list'] = $arr;
+//             } else {
+//                 $res->status = false;
+//                 $res->message = 'Could not get data';
+//                 $res->data['cat_list'] = [];
+//             }
+//         }
+//         return $res;
+//     }
+
+
+    // new priyanka ma'am 4-10-2019
+
     function getExamList($data) {
+        global $auth_obj;
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetched', 'data' => null];
-        $sql = 'Select * From `exam_master` Where `Status` = "A" AND `is_publish` = 1 ';
+        $user_id = $auth_obj->user->user_id;
+        $sql = sprintf('Select ep.`pay_id`, er.`exam_type_id`,e.*, CASE WHEN ep.`pay_id` IS NULL THEN 0 ELSE 1 END as `is_subscribe`, CASE WHEN es.`id` IS NULL THEN 0 ELSE 1 END as `is_attempted` From `exam_master` e  INNER JOIN `exam_type_master` et ON et.`id` = e.`exam_type_id` LEFT JOIN `exam_student_mapper` es ON es.`exam_id` = e.`exam_id`  LEFT JOIN `users_exam_payment_request` er ON er.`exam_type_id` = et.`id` AND er.`status` = "paid" AND er.`user_id` = %s  LEFT JOIN `users_exam_payments` ep ON ep.`upcpayrq_id` = er.`upcpayrq_id` AND ep.`status` = "captured"  Where e.`Status` = "A" AND e.`is_publish` = 1 ', $user_id);
         if (!is_null($data)) {
             $exam_type_id = $data->exam_type_id;
-            $sql .= ' AND `exam_type_id` = ' . $exam_type_id;
+            $sql .= ' AND e.`exam_type_id` = ' . $exam_type_id;
         }
-        $sql .= ' ORDER BY `created_date` DESC';
-        $arr = [];
+        $sql .= ' ORDER BY e.`created_date` DESC';
+        
         $result = $this->con->prepare($sql);
-        if ($result->execute()) {
+       if ($result->execute()) {
             $arr = [];
-            $number_of_rows = $result->fetchColumn();
+            $number_of_rows = $result->rowCount();
             if ($number_of_rows > 0) {
                 foreach ($this->con->query($sql) as $row) {
                     $obj = (object) [];
                     $obj->exam_id = $row['exam_id'];
+                    $obj->is_subscribe = $row['is_subscribe'];
+                    $obj->is_attempted = $row['is_attempted'];
                     $obj->exam_name = $row['exam_name'];
                     $obj->description = $row['description'];
                     $obj->no_of_que = $row['no_of_que'];
                     $obj->is_penaulty = $row['is_penaulty'];
                     $obj->start_date = $row['start_date'];
                     $obj->end_date = $row['end_date'];
-//                    $obj->start_time = date('h:i a', strtotime($row['start_time']));
-//                    $obj->end_time = date('h:i a', strtotime($row['end_time']));
+    //                    $obj->start_time = date('h:i a', strtotime($row['start_time']));
+    //                    $obj->end_time = date('h:i a', strtotime($row['end_time']));
                     $obj->duration = $row['duration'];
                     $obj->exam_type_id = $row['exam_type_id'];
                     $obj->category_id = $row['category_id'];
@@ -1177,9 +1233,12 @@ class adminModel {
         return $res;
     }
 
+
+
+
     function getExamListByExamType($exam_type_id) {
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetched', 'data' => null];
-        $sql = 'Select * From `exam_master` Where `Status` = "A" AND `is_publish` = 1 AND `exam_type_id` = ' . $exam_type_id . ' ORDER BY `created_date` DESC LIMIT 10 OFFSET 0';
+        $sql = 'Select * From `exam_master` Where `Status` = "A" AND `is_publish` = 1 AND `exam_type_id` = ' . $exam_type_id . ' ORDER BY `created_date` DESC LIMIT 1 OFFSET 0';
         $arr = [];
         $result = $this->con->prepare($sql);
         if ($result->execute()) {
@@ -1379,16 +1438,14 @@ class adminModel {
         return $res;
     }
 
+
     function getFeedbackRatingsByExamId($exam_id) {
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetched', 'data' => null];
         $sql = sprintf('SELECT f.`question`, f.`option1`, f.`option2`, f.`option3`, f.`option4`, f.`option5`, fm.`comment`, fm.`rating` FROM `feedback_question_master` f INNER JOIN `feedback_master` fm ON fm.`feedback_id` = f.`id` WHERE fm.`exam_id` = %s', $exam_id);
-        var_dump($sql);
-        die;
+        
         $result = $this->con->prepare($sql);
         if ($result->execute()) {
-            $number_of_rows = $result->fetchColumn();
-            var_dump($number_of_rows);
-            die;
+            $number_of_rows = $result->rowCount();
             if ($number_of_rows > 0) {
                 $arr = [];
                 foreach ($this->con->query($sql) as $row) {
