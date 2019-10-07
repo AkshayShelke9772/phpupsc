@@ -725,9 +725,7 @@ class adminModel {
 
     function changePassword($userId, $newPassword) {
 
-        $sql = "select * from forgotPass where otp=' $otp
-
-                 '";
+        $sql = "select * from forgotPass where otp=' $userId'";
         $result = $this->con->prepare($sql);
 
         if (mysqli_num_rows($result) > 0) {
@@ -1185,6 +1183,7 @@ class adminModel {
         $res = (object) ['status' => FALSE, 'message' => 'Data Could not be fetched', 'data' => null];
         $user_id = $auth_obj->user->user_id;
         $sql = sprintf('Select ep.`pay_id`, er.`exam_type_id`,e.*, CASE WHEN ep.`pay_id` IS NULL THEN 0 ELSE 1 END as `is_subscribe`, CASE WHEN es.`id` IS NULL THEN 0 ELSE 1 END as `is_attempted` From `exam_master` e  INNER JOIN `exam_type_master` et ON et.`id` = e.`exam_type_id` LEFT JOIN `exam_student_mapper` es ON es.`exam_id` = e.`exam_id`  LEFT JOIN `users_exam_payment_request` er ON er.`exam_type_id` = et.`id` AND er.`status` = "paid" AND er.`user_id` = %s  LEFT JOIN `users_exam_payments` ep ON ep.`upcpayrq_id` = er.`upcpayrq_id` AND ep.`status` = "captured"  Where e.`Status` = "A" AND e.`is_publish` = 1 ', $user_id);
+        $sql = 'Select e.*, CASE WHEN ep.`pay_id` IS NULL THEN 0 ELSE 1 END as `is_subscribe`,  CASE WHEN es.`id` IS NULL THEN 0 ELSE 1 END as `is_attempted` From `exam_master` e LEFT JOIN `exam_student_mapper` es ON es.`exam_id` = e.`exam_id`  LEFT JOIN `users_exam_payment_request` er ON er.`exam_id` = e.`exam_id` AND er.`status` = "paid" AND er.`user_id` = 14 LEFT JOIN `users_exam_payments` ep ON ep.`upcpayrq_id` = er.`upcpayrq_id` AND ep.`status` = "captured" Where e.`Status` = "A" AND e.`is_publish` = 1 ';
         if (!is_null($data)) {
             $exam_type_id = $data->exam_type_id;
             $sql .= ' AND e.`exam_type_id` = ' . $exam_type_id;
